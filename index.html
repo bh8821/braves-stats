@@ -96,7 +96,7 @@
   const fmt = v => v == null ? "—" : v.toFixed(3).replace(/^0/, "");
   // IP stored as exact fraction (e.g. 4/3 for 1⅓); display and ERA use outs
   const fmtIP  = ip => { const o=Math.round(ip*3); const f=Math.floor(o/3); const r=o%3; return r===0?`${f}`:`${f}${['','⅓','⅔'][r]}`; };
-  const calcERA = (er, ip) => ip > 0 ? (er * 27 / Math.round(ip * 3)).toFixed(2) : "—";
+  const calcERA = (er, ip) => ip > 0 ? String(parseFloat((er * 27 / Math.round(ip * 3)).toFixed(2))) : "—";
 
   function buildBatting(games) {
     const m = {};
@@ -242,7 +242,7 @@
                 <span style={{ fontWeight:700,fontSize:13,color:"#0f172a" }}>{p.name}</span>
                 <span style={{ fontSize:10,color:"#94a3b8",fontFamily:"sans-serif",marginLeft:5 }}>{p.gp}G</span>
                 <div style={{ fontSize:11,color:"#64748b",fontFamily:"sans-serif",marginTop:1 }}>
-                  {p.ip}IP · {p.hits}H · {p.bb}BB · {p.k}K
+                  {fmtIP(p.ip)}IP · {p.hits}H · {p.bb}BB · {p.k}K
                   {rec ? <span style={{ color:"#0284c7",fontWeight:600,marginLeft:4 }}>{rec}</span> : ""}
                   {" · "}<span style={{ fontWeight:600,
                     color:era==="—"?"#94a3b8":parseFloat(era)===0?"#16a34a":parseFloat(era)>=6?"#dc2626":"#d97706" }}>
