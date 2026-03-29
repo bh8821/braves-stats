@@ -53,6 +53,33 @@
         { num: 42, name: "Hwang, Brian", result:"S", ip:3, hits:1, er:0, bb:1, k:3, pitches:37 },
       ],
     },
+    {
+      id: "g2",
+      date: "2026-03-28",
+      opponent: "Ripperz",
+      teamScore: 11,
+      oppScore: 12,
+      result: "L",
+      batting: [
+        { num: 21, name:"Yang, Sung",      ab:3, h:1, rbi:0, r:2, bb:1, hbp:0, sf:0, k:0, sb:0, extra:"" },
+        { num: 42, name:"Hwang, Brian",   ab:2, h:0, rbi:0, r:1, bb:2, hbp:0, sf:0, k:0, sb:0, extra:"" },
+        { num:  0, name:"Wilson, Jacob",  ab:4, h:1, rbi:1, r:1, bb:0, hbp:0, sf:0, k:0, sb:0, extra:"2루타" },
+        { num: 79, name:"Han, Kevin",     ab:4, h:3, rbi:4, r:3, bb:0, hbp:0, sf:0, k:0, sb:0, extra:"" },
+        { num:  7, name:"Choi, Mark",     ab:3, h:1, rbi:0, r:1, bb:1, hbp:0, sf:0, k:0, sb:0, extra:"" },
+        { num: 23, name:"Yoo, Felix",     ab:4, h:2, rbi:1, r:2, bb:0, hbp:0, sf:0, k:1, sb:0, extra:"2루타×2" },
+        { num: 24, name:"Hahn, Seung",    ab:1, h:1, rbi:1, r:0, bb:1, hbp:0, sf:0, k:0, sb:0, extra:"" },
+        { num:  5, name:"Wilson, Paul",   ab:1, h:1, rbi:1, r:0, bb:1, hbp:0, sf:0, k:0, sb:0, extra:"교체" },
+        { num: 29, name:"Kim, Sam",       ab:2, h:1, rbi:1, r:0, bb:0, hbp:0, sf:0, k:0, sb:0, extra:"" },
+        { num: 40, name:"Kim, Wooyeon",   ab:1, h:0, rbi:1, r:0, bb:1, hbp:0, sf:0, k:0, sb:0, extra:"아수선택" },
+        { num: 44, name:"Choi, Chuck",    ab:4, h:2, rbi:1, r:0, bb:0, hbp:0, sf:0, k:0, sb:0, extra:"3루타" },
+        { num: 13, name:"Park, Jaehun",   ab:4, h:1, rbi:0, r:1, bb:0, hbp:0, sf:0, k:1, sb:0, extra:"2루타" },
+      ],
+      pitching: [
+        { num: 79, name:"Han, Kevin",   result:"-", ip:2,   hits:1, er:0, bb:1, k:0, pitches:0 },
+        { num: 42, name:"Hwang, Brian", result:"-", ip:4/3, hits:5, er:7, bb:2, k:3, pitches:0 },
+        { num:  7, name:"Choi, Mark",   result:"L", ip:5/3, hits:7, er:3, bb:0, k:3, pitches:0 },
+      ],
+    },
     // 다음 경기는 여기에 추가됩니다
   ];
   // ════════════════════════════════════════════════════════
@@ -67,6 +94,9 @@
     return d > 0 ? (p.h + p.bb + p.hbp) / d : null;
   };
   const fmt = v => v == null ? "—" : v.toFixed(3).replace(/^0/, "");
+  // IP stored as exact fraction (e.g. 4/3 for 1⅓); display and ERA use outs
+  const fmtIP  = ip => { const o=Math.round(ip*3); const f=Math.floor(o/3); const r=o%3; return r===0?`${f}`:`${f}${['','⅓','⅔'][r]}`; };
+  const calcERA = (er, ip) => ip > 0 ? (er * 27 / Math.round(ip * 3)).toFixed(2) : "—";
 
   function buildBatting(games) {
     const m = {};
@@ -110,9 +140,9 @@
   ];
 
   const PITCH_CATS = [
-    { key:"era",  label:"ERA", sf: p => p.ip>0?p.er/p.ip*9:99, fmt: p => p.ip>0?(p.er/p.ip*9).toFixed(2):"—", lo:true },
+    { key:"era",  label:"ERA", sf: p => p.ip>0?p.er*27/Math.round(p.ip*3):99, fmt: p => calcERA(p.er,p.ip), lo:true },
     { key:"k",    label:"K",   sf: p => p.k,    fmt: p => p.k },
-    { key:"ip",   label:"IP",  sf: p => p.ip,   fmt: p => p.ip },
+    { key:"ip",   label:"IP",  sf: p => p.ip,   fmt: p => fmtIP(p.ip) },
     { key:"bb",   label:"BB",  sf: p => p.bb,   fmt: p => p.bb, lo:true },
     { key:"hits", label:"H허용",sf: p => p.hits, fmt: p => p.hits, lo:true },
   ];
@@ -247,7 +277,7 @@
             </thead>
             <tbody>
               {pitching.map((p,i) => {
-                const era = p.ip>0?(p.er/p.ip*9).toFixed(2):"—";
+                const era = calcERA(p.er, p.ip);
                 const rs = RS[p.result]??{ bg:"#f1f5f9",color:"#64748b",border:"#e2e8f0" };
                 return (
                   <tr key={p.name} style={{ borderTop:"1px solid #f1f5f9",background:i%2===0?"#fff":"#f8fafc" }}>
@@ -259,7 +289,7 @@
                       <span style={{ background:rs.bg,color:rs.color,border:`1px solid ${rs.border}`,
                         borderRadius:4,padding:"2px 7px",fontSize:11,fontWeight:800 }}>{p.result}</span>
                     </td>
-                    {[p.ip,p.hits,p.er,p.bb,p.k,p.pitches].map((v,j) => (
+                    {[fmtIP(p.ip),p.hits,p.er,p.bb,p.k,p.pitches||"—"].map((v,j) => (
                       <td key={j} style={{ padding:"9px 8px",textAlign:"center",color:"#475569" }}>{v}</td>
                     ))}
                     <td style={{ padding:"9px 8px",textAlign:"center",fontWeight:700,
