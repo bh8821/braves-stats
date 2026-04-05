@@ -207,14 +207,27 @@
     );
   }
 
-  function BatList({ players, catIdx }) {
+  // ── Qualifying minimums: per-game ratio ──
+  const BAT_MIN_PA_PER_G  = 2;   // 타자: 경기당 2 PA
+  const PIT_MIN_IP_PER_G  = 1;   // 투수: 경기당 1 IP
+  const calcPA = p => p.ab + p.bb + p.hbp + p.sf;
+  const qualBat = (p, ng) => calcPA(p) >= ng * BAT_MIN_PA_PER_G;
+  const qualPit = (p, ng) => Math.round(p.ip * 3) >= ng * PIT_MIN_IP_PER_G * 3;
+
+  function BatList({ players, catIdx, numGames }) {
     const cat = BAT_CATS[catIdx];
-    const sorted = [...players].sort((a,b) => cat.lo ? cat.sf(a)-cat.sf(b) : cat.sf(b)-cat.sf(a));
+    const sortFn = (a,b) => cat.lo ? cat.sf(a)-cat.sf(b) : cat.sf(b)-cat.sf(a);
+    const isSeason = !!numGames;
+    const qual    = isSeason ? players.filter(p =>  qualBat(p, numGames)) : players;
+    const nonQual = isSeason ? players.filter(p => !qualBat(p, numGames)) : [];
+    const sorted   = [...qual].sort(sortFn);
+    const sortedNQ = [...nonQual].sort(sortFn);
+    const minPA = numGames * BAT_MIN_PA_PER_G;
     return (
       <div style={{ background:"#fff",borderRadius:"0 0 8px 8px",border:"1px solid #e2e8f0",
         borderTop:"none",overflow:"hidden",marginBottom:12 }}>
         {sorted.map((p,i) => {
-          const top = i<3;
+          const top = isSeason ? i<3 : i<3;
           return (
             <div key={p.name} style={{ display:"flex",alignItems:"center",padding:"9px 12px",
               background:i%2===0?"#fff":"#f8fafc",borderBottom:"1px solid #f1f5f9",
@@ -240,19 +253,51 @@
             </div>
           );
         })}
+        {/* DNQ — 시즌 뷰에서만 */}
+        {isSeason && sortedNQ.length > 0 && (
+          <div style={{ padding:"6px 12px",background:"#f8fafc",borderTop:"1px dashed #e2e8f0",borderBottom:"1px dashed #e2e8f0",
+            fontSize:10,color:"#94a3b8",fontFamily:"sans-serif",fontWeight:700,letterSpacing:1 }}>
+            최소 {minPA}PA 미달 (DNQ)
+          </div>
+        )}
+        {isSeason && sortedNQ.map((p,i) => (
+          <div key={p.name} style={{ display:"flex",alignItems:"center",padding:"8px 12px",
+            background:"#fafafa",borderBottom:"1px solid #f1f5f9",opacity:0.5,
+            borderLeft:"4px solid transparent" }}>
+            <div style={{ width:20,fontSize:10,textAlign:"center",color:"#cbd5e1",flexShrink:0 }}>—</div>
+            <NumBadge num={p.num} top={false} />
+            <div style={{ flex:1,minWidth:0 }}>
+              <span style={{ fontWeight:600,fontSize:12,color:"#94a3b8" }}>{p.name}</span>
+              <span style={{ fontSize:10,color:"#cbd5e1",fontFamily:"sans-serif",marginLeft:5 }}>{calcPA(p)}PA</span>
+              <div style={{ fontSize:11,color:"#94a3b8",fontFamily:"sans-serif",marginTop:1 }}>
+                {p.ab}AB · {p.h}H · AVG {fmt(calcAVG(p))} · OBP {fmt(calcOBP(p))}
+              </div>
+            </div>
+            <div style={{ fontSize:16,fontWeight:700,fontFamily:"Arial Black,sans-serif",
+              color:"#cbd5e1",minWidth:46,textAlign:"right" }}>
+              {cat.fmt(p)}
+            </div>
+          </div>
+        ))}
       </div>
     );
   }
 
-  function PitchList({ players, catIdx }) {
+  function PitchList({ players, catIdx, numGames }) {
     const cat = PITCH_CATS[catIdx];
-    const sorted = [...players].sort((a,b) => cat.lo ? cat.sf(a)-cat.sf(b) : cat.sf(b)-cat.sf(a));
+    const isSeason = !!numGames;
+    const qual    = isSeason ? players.filter(p =>  qualPit(p, numGames)) : players;
+    const nonQual = isSeason ? players.filter(p => !qualPit(p, numGames)) : [];
+    const sortFn  = (a,b) => cat.lo ? cat.sf(a)-cat.sf(b) : cat.sf(b)-cat.sf(a);
+    const sorted   = [...qual].sort(sortFn);
+    const sortedNQ = [...nonQual].sort(sortFn);
+    const minIP = isSeason ? fmtIP(numGames * PIT_MIN_IP_PER_G) : "";
     return (
       <div style={{ background:"#fff",borderRadius:"0 0 8px 8px",border:"1px solid #e2e8f0",
         borderTop:"none",overflow:"hidden",marginBottom:12 }}>
         {sorted.map((p,i) => {
           const top = i<3;
-          const era = p.ip>0?(p.er/p.ip*9).toFixed(2):"—";
+          const era = calcERA(p.er, p.ip);
           const rec = [p.w&&`${p.w}W`,p.l&&`${p.l}L`,p.s&&`${p.s}S`,p.hld&&`${p.hld}H`].filter(Boolean).join(" ");
           return (
             <div key={p.name} style={{ display:"flex",alignItems:"center",padding:"9px 12px",
@@ -266,7 +311,7 @@
                 <span style={{ fontWeight:700,fontSize:13,color:"#0f172a" }}>{p.name}</span>
                 <span style={{ fontSize:10,color:"#94a3b8",fontFamily:"sans-serif",marginLeft:5 }}>{p.gp}G</span>
                 <div style={{ fontSize:11,color:"#64748b",fontFamily:"sans-serif",marginTop:1 }}>
-                  {fmtIP(p.ip)}IP · {p.hits}H · {p.bb}BB · {p.k}K
+                  {fmtIP(p.ip)}IP · {p.hits}H · {p.er}ER · {p.bb}BB · {p.k}K
                   {rec ? <span style={{ color:"#0284c7",fontWeight:600,marginLeft:4 }}>{rec}</span> : ""}
                   {" · "}<span style={{ fontWeight:600,
                     color:era==="—"?"#94a3b8":parseFloat(era)===0?"#16a34a":parseFloat(era)>=6?"#dc2626":"#d97706" }}>
@@ -276,6 +321,38 @@
               </div>
               <div style={{ fontSize:19,fontWeight:900,fontFamily:"Arial Black,sans-serif",
                 color:top?ACC[i]:"#334155",minWidth:48,textAlign:"right" }}>
+                {cat.fmt(p)}
+              </div>
+            </div>
+          );
+        })}
+        {/* DNQ — 시즌 뷰에서만 */}
+        {isSeason && sortedNQ.length > 0 && (
+          <div style={{ padding:"6px 12px",background:"#f8fafc",borderTop:"1px dashed #e2e8f0",borderBottom:"1px dashed #e2e8f0",
+            fontSize:10,color:"#94a3b8",fontFamily:"sans-serif",fontWeight:700,letterSpacing:1 }}>
+            최소 {minIP}IP 미달 (DNQ)
+          </div>
+        )}
+        {isSeason && sortedNQ.map((p,i) => {
+          const era = calcERA(p.er, p.ip);
+          const rec = [p.w&&`${p.w}W`,p.l&&`${p.l}L`,p.s&&`${p.s}S`,p.hld&&`${p.hld}H`].filter(Boolean).join(" ");
+          return (
+            <div key={p.name} style={{ display:"flex",alignItems:"center",padding:"8px 12px",
+              background:"#fafafa",borderBottom:"1px solid #f1f5f9",opacity:0.55,
+              borderLeft:"4px solid transparent" }}>
+              <div style={{ width:20,fontSize:10,textAlign:"center",color:"#cbd5e1",flexShrink:0 }}>—</div>
+              <NumBadge num={p.num} top={false} />
+              <div style={{ flex:1,minWidth:0 }}>
+                <span style={{ fontWeight:600,fontSize:12,color:"#94a3b8" }}>{p.name}</span>
+                <span style={{ fontSize:10,color:"#cbd5e1",fontFamily:"sans-serif",marginLeft:5 }}>{fmtIP(p.ip)}IP</span>
+                <div style={{ fontSize:11,color:"#94a3b8",fontFamily:"sans-serif",marginTop:1 }}>
+                  {p.hits}H · {p.er}ER · {p.bb}BB · {p.k}K
+                  {rec ? <span style={{ marginLeft:4 }}>{rec}</span> : ""}
+                  {" · "}ERA {era}
+                </div>
+              </div>
+              <div style={{ fontSize:16,fontWeight:700,fontFamily:"Arial Black,sans-serif",
+                color:"#cbd5e1",minWidth:48,textAlign:"right" }}>
                 {cat.fmt(p)}
               </div>
             </div>
@@ -439,11 +516,11 @@
 
               <div style={{ fontSize:11,letterSpacing:1.5,color:"#94a3b8",fontFamily:"sans-serif",fontWeight:700,marginBottom:6 }}>BATTING</div>
               <Tabs active={batCat} set={setBatCat} cats={BAT_CATS} />
-              <BatList players={seaBat} catIdx={batCat} />
+              <BatList players={seaBat} catIdx={batCat} numGames={GAMES.length} />
 
               <div style={{ fontSize:11,letterSpacing:1.5,color:"#94a3b8",fontFamily:"sans-serif",fontWeight:700,marginBottom:6,marginTop:4 }}>PITCHING</div>
               <Tabs active={pitCat} set={setPitCat} cats={PITCH_CATS} />
-              <PitchList players={seaPit} catIdx={pitCat} />
+              <PitchList players={seaPit} catIdx={pitCat} numGames={GAMES.length} />
 
               <div style={{ fontSize:11,letterSpacing:1.5,color:"#94a3b8",fontFamily:"sans-serif",fontWeight:700,marginBottom:8,marginTop:4 }}>GAME LOG</div>
               {GAMES.map((gm,i) => (
