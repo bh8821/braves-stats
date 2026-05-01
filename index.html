@@ -188,10 +188,10 @@
         opp:    [0,2,4,6,1],
       },
       batting: [
-        { num: 21, name:"Yang, Sung",      ab:3, h:1, rbi:1, r:3, bb:4, hbp:0, sf:0, k:1, sb:0, extra:"" },
-        { num: 23, name:"Yoo, Felix",      ab:3, h:2, rbi:1, r:2, bb:2, hbp:0, sf:0, k:1, sb:0, extra:"" },
-        { num: 79, name:"Han, Kevin",      ab:4, h:1, rbi:0, r:1, bb:1, hbp:0, sf:0, k:0, sb:0, extra:"" },
-        { num:  7, name:"Choi, Mark",      ab:2, h:0, rbi:0, r:1, bb:2, hbp:0, sf:0, k:0, sb:0, extra:"" },
+        { num: 21, name:"Yang, Sung",      ab:3, h:1, rbi:1, r:3, bb:1, hbp:0, sf:0, k:1, sb:4, extra:"" },
+        { num: 23, name:"Yoo, Felix",      ab:3, h:2, rbi:1, r:2, bb:1, hbp:0, sf:0, k:1, sb:2, extra:"" },
+        { num: 79, name:"Han, Kevin",      ab:4, h:1, rbi:0, r:1, bb:0, hbp:0, sf:0, k:0, sb:1, extra:"" },
+        { num:  7, name:"Choi, Mark",      ab:2, h:0, rbi:0, r:1, bb:0, hbp:0, sf:0, k:0, sb:1, extra:"" },
         { num: 24, name:"Hahn, Seung",     ab:2, h:0, rbi:1, r:0, bb:1, hbp:0, sf:0, k:0, sb:0, extra:"" },
         { num:  2, name:"Kang, Billy",     ab:2, h:0, rbi:1, r:0, bb:1, hbp:0, sf:0, k:0, sb:0, extra:"" },
         { num: 29, name:"Kim, Sam",        ab:2, h:0, rbi:1, r:1, bb:1, hbp:0, sf:0, k:0, sb:0, extra:"" },
@@ -419,6 +419,7 @@
                 {p.gp && <span style={{ fontSize:10,color:"#94a3b8",fontFamily:"sans-serif",marginLeft:5 }}>{p.gp}G</span>}
                 <div style={{ fontSize:11,color:"#64748b",fontFamily:"sans-serif",marginTop:1 }}>
                   {p.ab}AB · {p.h}H · {p.rbi}RBI
+                  {p.sb>0 && <span style={{ color:"#7c3aed",fontWeight:600 }}> · {p.sb}SB</span>}
                   {" · "}<span style={{ color:"#0284c7",fontWeight:600 }}>AVG {fmt(calcAVG(p))}</span>
                   {" · "}<span style={{ color:"#0891b2",fontWeight:600 }}>OBP {fmt(calcOBP(p))}</span>
                   {p.extra ? ` · ${p.extra}` : ""}
@@ -448,7 +449,7 @@
               <span style={{ fontWeight:600,fontSize:12,color:"#94a3b8" }}>{p.name}</span>
               <span style={{ fontSize:10,color:"#cbd5e1",fontFamily:"sans-serif",marginLeft:5 }}>{calcPA(p)}PA</span>
               <div style={{ fontSize:11,color:"#94a3b8",fontFamily:"sans-serif",marginTop:1 }}>
-                {p.ab}AB · {p.h}H · AVG {fmt(calcAVG(p))} · OBP {fmt(calcOBP(p))}
+                {p.ab}AB · {p.h}H · {p.sb>0?`${p.sb}SB · `:""}AVG {fmt(calcAVG(p))} · OBP {fmt(calcOBP(p))}
               </div>
             </div>
             <div style={{ fontSize:16,fontWeight:700,fontFamily:"Arial Black,sans-serif",
